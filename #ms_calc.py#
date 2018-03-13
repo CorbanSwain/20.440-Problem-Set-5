@@ -20,10 +20,10 @@ class Residue:
 
     @property
     def mod_mass(self):
-        if self._mod is None:
-            return 0
-        else:
+        if self._mod is not None:
             return Residue.MOD_MASSES[self._mod]
+        else:
+            return 0
         
     @property
     def aa_mass(self):
@@ -31,7 +31,10 @@ class Residue:
 
     @property
     def code(self):
-        return self.aa + self.mod
+        code = self.aa
+        if self.mod is not None:
+            code = self.mod + code
+        return code
 
     @code.setter
     def code(self, value):
@@ -103,7 +106,7 @@ class Protein:
 
     @property
     def seqstr(self):
-        return [r.code for r in self.residues]
+        return ''.join(r.code for r in self.residues)
 
     def charged_mass(self, num_protons=1):
         return self.mass + (Protein.H_MASS * num_protons)
