@@ -293,27 +293,29 @@ for best in best_list:
     while p.charged_mass(2) / 2 < target_mz:
         max_score = max_score
         best_list_2 = []
+        i_best = 0
         for i, n_mer in enumerate(it.product(all_res, repeat=3)):
             n_mer_seq = ''.join(list(n_mer))  
             temp_p = n_mer_seq + p
             (b, y) = print_ion_table(temp_p.all_ions(), mass_ranges_2, silent=True)
-            score = round(y * 10);
             if target_mass - temp_p.mass < 10:
                 score = 0
             else:
-                score = score + (100 * np.math.exp(-1 / 100 * (target_mass - temp_p.mass) ** 2)) - 50
+                score = y * 10 + (100 * np.math.exp(-1 / 100 * (target_mass - temp_p.mass) ** 2))
+            score
             if abs(score - max_score) <= 1:
                 print('%10d | %20s | %10.2f | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
-                best_list_2.append(Protein(n_mer_seq))
+                best_list_2.append(temp_p)
             if score > max_score:
-                best_list_2 = [Protein(n_mer_seq)]
+                best_list_2 = [temp_p]
                 max_score = score
-                print('%10d | %20s | %10.2f | %10.2f' % (i,temp_p.sequence, score, temp_p.mass))
-        best_list_2 = list(set([s.sequence[1:] for s in best_list_2]))
+                print('%10d | %20s | %10.2f | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
         if best_list_2:
-            p = best_list_2[0] + p
+            best_list_old = Protein(list(set([s.sequence[1:] for s in best_list_2])))
+            p = best_list_old[0]
         else:
-            p = Protein(p.sequence[1:])
+            i_best += 1
+            p = best_list_old[i_best + 1]
             
 
 print('\n\nSeq - %s' % p.sequence)
