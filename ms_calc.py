@@ -286,10 +286,12 @@ def spectra_score(temp_p, mass_ranges, target_mass):
 
 candidate_seq = 'RDLPVPSDpYSSFK'
 c_score, _ = spectra_score(Protein(candidate_seq), mass_ranges_2, target_mass)
-print('Sequence: %s,           Score = %d' % (candidate_seq, c_score))
+print('Sequence: %s,           Score =   %d' % (candidate_seq, c_score))
 print_ion_table(Protein(candidate_seq).all_ions(), mass_ranges_2)
 # PISSPVPDSpYSSFK
-#  RDLPVPSDpYSSFK = 300, -0.01
+#  RDLPVPSDpYSSFK = 260 Score, -0.01 Da mass diff
+# GVDLPVPSDpYSSFK = 260 Score,  0.00 Da mass diff
+# VGDLPVPSDpYSSFK = 260 Score,  0.00 Da mass diff
 
 input('Press ENTER to continue ...\n')
 
@@ -308,12 +310,13 @@ for i, n_mer in enumerate(it.product(all_res, repeat=4)):
         print('%10d | %20s | * %6d' % (i, p.sequence, score))
 best_list = list(set([s[1:] for s in best_list]))
 
-
+candidates = []
 for best in best_list:    
     p = Protein(best)
     best_list_old = []
     final_max_score = max_score
-    while p.charged_mass(2) / 2 < target_mz:
+    did_find_candidate = False
+    while not did_find_candidate:
         max_score = 0
         best_list_2 = []
         i_best = 0
@@ -325,15 +328,16 @@ for best in best_list:
                                                       target_mass)
             if abs(score - max_score) < 1:
                 print('%10d | %20s | %8d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
-                print_ion_table(temp_p.all_ions(), mass_ranges_2)
+                if did_find_candidate: print_ion_table(temp_p.all_ions(), mass_ranges_2)
                 best_list_2.append(temp_p)
             elif score > max_score:
                 best_list_2 = [temp_p]
                 max_score = score
                 print('%10d | %20s | * %6d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
-                print_ion_table(temp_p.all_ions(), mass_ranges_2)
+                if did_find_candidate: print_ion_table(temp_p.all_ions(), mass_ranges_2)
         if max_score > final_max_score:
             best_list_old = list(set([s.sequence[1:] for s in best_list_2]))
+            candidates = best_list_2
             i_best = 0
             p = Protein(best_list_old[0])
             final_max_score = max_score
@@ -343,8 +347,10 @@ for best in best_list:
                 p = Protein(best_list_old[i_best])
             else:
                 break
-                
-
-print('\n\nSeq - %s' % p.sequence)
-print('(M + 2H)++ = %10.2f' % (p.charged_mass(2) / 2))
+if candidates:                
+    for p in candidates:
+        print('\n\nSeq - %s' % p.sequence)
+        print('(M + 2H)++ = %10.2f' % (p.charged_mass(2) / 2))
+else:
+    print('Failed to find any candidates')
 
