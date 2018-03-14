@@ -235,12 +235,11 @@ def print_ion_table(ion_masses, mass_ranges, silent=False):
             y_star = '*'
             y_count += 1
         if not silent: print(body_fmt % (i, b_star, b, y_star, y))
-    b_perc = b_count / len(mass_ranges) * 100.0
-    y_perc = y_count / len(mass_ranges) * 100.0
-    if not silent: print('%10s | %12s | %12s' % ('', '', ''))
-    if not silent: print('%10s   %11.2f%% | %11.2f%%\n' % ('Matches :',
-                                                            b_perc, y_perc))
-    return (b_perc, y_perc)
+
+    if not silent: print('%10s   %12d | %12d   = %d\n\n' % ('N Match. :',
+                                                            b_count, y_count,
+                                                            b_count + y_count))
+    return (b_count, y_count)
 
 for site in p_sites:
     print('\n Phosphorylating %s-%d' % (protein.sequence[site], site + 1))
@@ -270,28 +269,45 @@ target_mz = 795.86
 target_mass = target_mz * 2 - (Protein.H_MASS * 2)
 
 
-print_ion_table(Protein('RHSPVPDSpYSSFK').all_ions(), mass_ranges_2)
-# PISSPVPDSpYSSFK
+def spectra_score(temp_p, mass_ranges, target_mass):
+    did_find_candidate = False
+    (b, y) = print_ion_table(temp_p.all_ions(), mass_ranges, silent=True)
+    if target_mass - temp_p.mass < -0.5:
+        score = -1
+    elif len(temp_p) > 12:
+        score = (y * 10) + (10 * b)
+        if abs(target_mass - temp_p.mass) < 0.015:
+            score += 100
+            did_find_candidate = True
+    else:
+        score = y * 10
+    score = round(score)
+    return (score, did_find_candidate)
 
+candidate_seq = 'RDLPVPSDpYSSFK'
+c_score, _ = spectra_score(Protein(candidate_seq), mass_ranges_2, target_mass)
+print('Sequence: %s,           Score = %d' % (candidate_seq, c_score))
+print_ion_table(Protein(candidate_seq).all_ions(), mass_ranges_2)
+# PISSPVPDSpYSSFK
+#  RDLPVPSDpYSSFK = 300, -0.01
+
+input('Press ENTER to continue ...\n')
 
 max_score = -100
 best_list = []
 for i, n_mer in enumerate(it.product(all_res, repeat=4)):
     p = Protein(''.join(list(n_mer)).replace(' ', ''))
     (b, y) = print_ion_table(p.all_ions(), mass_ranges_2, silent=True)
-    if target_mass - p.mass < 3:
-        score = 0
-    else:
-        score = y * 10
-    score = round(score)
+    score, _ = spectra_score(p, mass_ranges_2, target_mass)
     if abs(score - max_score) <= 1:
-        print('%10d | %20s | %5.2f' % (i, p.sequence, score))
+        print('%10d | %20s | %8d' % (i, p.sequence, score))
         best_list.append(p.sequence)
     if score > max_score:
         best_list = [p.sequence]
         max_score = score
-        print('%10d | %20s | %5.2f' % (i, p.sequence, score))
+        print('%10d | %20s | * %6d' % (i, p.sequence, score))
 best_list = list(set([s[1:] for s in best_list]))
+
 
 for best in best_list:    
     p = Protein(best)
@@ -304,28 +320,18 @@ for best in best_list:
         for i, n_mer in enumerate(it.product(all_res, repeat=4)):
             n_mer_seq = ''.join(list(n_mer)).replace(' ', '') 
             temp_p = n_mer_seq + p
-            (b, y) = print_ion_table(temp_p.all_ions(), mass_ranges_2, silent=True)
-            if target_mass - temp_p.mass < -5:
-                score = 0
-            elif len(temp_p) > 12:
-                score = (y * 10) + (10 * b)
-                if abs(target_mass - temp_p.mass) < 0.5:
-                    score = score + 10
-                    if abs(target_mass - temp_p.mass) < 0.05:
-                        score = score + 100
-                #print('%20s | %4d | %4.2f' % (temp_p.sequence,
-                #                              score,
-                #                              target_mass - temp_p.mass))
-            else:
-                score = y * 10
-            score = round(score)
-            if abs(score - max_score) <= 1:
+            score, did_find_candidate = spectra_score(temp_p,
+                                                      mass_ranges_2,
+                                                      target_mass)
+            if abs(score - max_score) < 1:
                 print('%10d | %20s | %8d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
+                print_ion_table(temp_p.all_ions(), mass_ranges_2)
                 best_list_2.append(temp_p)
-            if score > max_score:
+            elif score > max_score:
                 best_list_2 = [temp_p]
                 max_score = score
                 print('%10d | %20s | * %6d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
+                print_ion_table(temp_p.all_ions(), mass_ranges_2)
         if max_score > final_max_score:
             best_list_old = list(set([s.sequence[1:] for s in best_list_2]))
             i_best = 0
