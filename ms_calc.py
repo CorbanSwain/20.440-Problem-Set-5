@@ -254,13 +254,15 @@ for site in p_sites:
 masses_2 = [147.11, 157.10, 167.08, 175.12, 183.15, 185.09, 197.13, 207.11,
             211.14, 216.04, 236.10, 244.13, 254.11, 266.15, 272.12, 280.17,
             294.18, 298.18, 316.21, 334.22, 357.21, 367.20, 381.21, 385.21,
-            403.13, 416.87, 440.16, 452.25, 468.25, 491.68, 505.28, 532.29,
-            527.19, 559.15, 569.20, 581.33, 603.76, 630.18, 638.32, 647.27,
+            403.13, 416.87, 440.16, 452.25, 468.25, 491.68, 505.28, 523.29,
+            527.19, 559.15, 569.20, 581.33,
+            603.76, 630.18, 638.32, 647.27, # Plot 2
             656.24, 672.78, 684.23, 711.28, 721.30, 730.30, 739.32, 755.27,
             767.36, 786.85, 795.86, 798.30, 826.31, 841.30, 858.29, 893.31,
             895.33, 913.34, 941.35, 955.34, 982.35, 992.38, 1005.98, 1010.39,
-            1026.38, 1042.39, 1068.43, 1097.42, 1109.46, 1127.55, 1139.46,
-            1166.46, 1188.50, 1206.51, 1275.52, 1293.54, 1300.60, 1344.56,
+            1026.38, 1042.39,
+            1068.43, 1097.42, 1109.46, 1127.55, 1139.46, # plot 3
+            1166.44, 1188.50, 1206.51, 1275.52, 1293.54, 1300.60, 1344.56,
             1362.56, 1380.57, 1390.55, 1459.61, 1478.62, 1590.713]
 check_margin = 0.03
 mass_ranges_2 = [(m - check_margin, m + check_margin) for m in masses_2]
@@ -303,24 +305,27 @@ for best in best_list:
             n_mer_seq = ''.join(list(n_mer)).replace(' ', '') 
             temp_p = n_mer_seq + p
             (b, y) = print_ion_table(temp_p.all_ions(), mass_ranges_2, silent=True)
-            if target_mass - temp_p.mass < 3:
-                score = (y * 10) - 50
+            if target_mass - temp_p.mass < -5:
+                score = 0
+            elif len(temp_p) > 12:
+                score = (y * 10) + (10 * b)
+                if abs(target_mass - temp_p.mass) < 0.5:
+                    score = score + 10
+                    if abs(target_mass - temp_p.mass) < 0.05:
+                        score = score + 100
+                #print('%20s | %4d | %4.2f' % (temp_p.sequence,
+                #                              score,
+                #                              target_mass - temp_p.mass))
             else:
                 score = y * 10
-            if abs(target_mass - temp_p.mass) < 0.015:
-                score = score + (10 * b)
-                print('%20s | %4d | %4.2f' % (temp_p.sequence,
-                                              score,
-                                              target_mass - temp_p.mass))
             score = round(score)
             if abs(score - max_score) <= 1:
-                #print('%10d | %20s | %8d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
+                print('%10d | %20s | %8d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
                 best_list_2.append(temp_p)
             if score > max_score:
                 best_list_2 = [temp_p]
                 max_score = score
-                print('^^^^^^^^^^^^^^')
-                #print('%10d | %20s | * %6d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
+                print('%10d | %20s | * %6d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
         if max_score > final_max_score:
             best_list_old = list(set([s.sequence[1:] for s in best_list_2]))
             i_best = 0
