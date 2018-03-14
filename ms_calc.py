@@ -1,6 +1,6 @@
 #!\bin\python3
 
-import numpy as np
+# import numpy as np
 import itertools as it
 
 class Residue:
@@ -92,11 +92,8 @@ class Protein:
     WATER_MASS = 18.010565
     H_MASS = 1.007276
     residues = []
-
-    def __init__(self):
-        pass
     
-    def __init__(self, residues):
+    def __init__(self, residues=[]):
         if residues.__class__.__name__ is self.__class__.__name__:
             self.residues = residues.residues
         elif residues.__class__.__name__ is 'Residue':
@@ -241,8 +238,8 @@ def print_ion_table(ion_masses, mass_ranges, silent=False):
     b_perc = b_count / len(mass_ranges) * 100.0
     y_perc = y_count / len(mass_ranges) * 100.0
     if not silent: print('%10s | %12s | %12s' % ('', '', ''))
-    if not silent: print('%10s   %11.2f%% | %11.2f%%' % ('Matches :',
-                                                         b_perc, y_perc))
+    if not silent: print('%10s   %11.2f%% | %11.2f%%\n' % ('Matches :',
+                                                            b_perc, y_perc))
     return (b_perc, y_perc)
 
 for site in p_sites:
@@ -253,6 +250,7 @@ for site in p_sites:
 
 
 ## Part 2 ##
+    
 masses_2 = [147.11, 157.10, 167.08, 175.12, 183.15, 185.09, 197.13, 207.11,
             211.14, 216.04, 236.10, 244.13, 254.11, 266.15, 272.12, 280.17,
             294.18, 298.18, 316.21, 334.22, 357.21, 367.20, 381.21, 385.21,
@@ -269,10 +267,15 @@ mass_ranges_2 = [(m - check_margin, m + check_margin) for m in masses_2]
 target_mz = 795.86
 target_mass = target_mz * 2 - (Protein.H_MASS * 2)
 
+
+print_ion_table(Protein('RHSPVPDSpYSSFK').all_ions(), mass_ranges_2)
+# PISSPVPDSpYSSFK
+
+
 max_score = -100
 best_list = []
 for i, n_mer in enumerate(it.product(all_res, repeat=4)):
-    p = Protein(''.join(list(n_mer)))
+    p = Protein(''.join(list(n_mer)).replace(' ', ''))
     (b, y) = print_ion_table(p.all_ions(), mass_ranges_2, silent=True)
     if target_mass - p.mass < 3:
         score = 0
@@ -304,14 +307,20 @@ for best in best_list:
                 score = (y * 10) - 50
             else:
                 score = y * 10
+            if abs(target_mass - temp_p.mass) < 0.015:
+                score = score + (10 * b)
+                print('%20s | %4d | %4.2f' % (temp_p.sequence,
+                                              score,
+                                              target_mass - temp_p.mass))
             score = round(score)
             if abs(score - max_score) <= 1:
-                print('%10d | %20s | %8d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
+                #print('%10d | %20s | %8d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
                 best_list_2.append(temp_p)
             if score > max_score:
                 best_list_2 = [temp_p]
                 max_score = score
-                print('%10d | %20s | * %6d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
+                print('^^^^^^^^^^^^^^')
+                #print('%10d | %20s | * %6d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
         if max_score > final_max_score:
             best_list_old = list(set([s.sequence[1:] for s in best_list_2]))
             i_best = 0
