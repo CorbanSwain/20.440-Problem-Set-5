@@ -99,7 +99,7 @@ class Protein:
         elif residues.__class__.__name__ is 'Residue':
             self.residues = [residues]
         elif type(residues) is list:
-            self.residues = residues
+            self.residues = [Residue(r) for r in residues]
         else:
             self.residues = Protein.str2res(residues.strip())
 
@@ -233,7 +233,18 @@ def print_ion_table(ion_masses, mass_ranges, silent=False):
             b_count += 1  
         if found_list[1]:
             y_star = '*'
+            y_count += 1    
+        # double ions
+        b_2plus = (b + Protein.H_MASS) / 2
+        y_2plus = (y + Protein.H_MASS) / 2
+        found_list = in_ranges(mass_ranges, [b_2plus, y_2plus])
+        if found_list[0]:
+            b_star += '*'
+            b_count += 1  
+        if found_list[1]:
+            y_star += '*'
             y_count += 1
+
         if not silent: print(body_fmt % (i, b_star, b, y_star, y))
 
     if not silent: print('%10s   %12d | %12d   = %d\n\n' % ('N Match. :',
@@ -263,7 +274,7 @@ masses_2 = [147.11, 157.10, 167.08, 175.12, 183.15, 185.09, 197.13, 207.11,
             1068.43, 1097.42, 1109.46, 1127.55, 1139.46, # plot 3
             1166.44, 1188.50, 1206.51, 1275.52, 1293.54, 1300.60, 1344.56,
             1362.56, 1380.57, 1390.55, 1459.61, 1478.62, 1590.713]
-check_margin = 0.03
+check_margin = 0.015
 mass_ranges_2 = [(m - check_margin, m + check_margin) for m in masses_2]
 target_mz = 795.86
 target_mass = target_mz * 2 - (Protein.H_MASS * 2)
@@ -284,14 +295,16 @@ def spectra_score(temp_p, mass_ranges, target_mass):
     score = round(score)
     return (score, did_find_candidate)
 
-candidate_seq = 'RDLPVPSDpYSSFK'
+candidate_seq = 'GVDLPVPSDpYSSFK'
 c_score, _ = spectra_score(Protein(candidate_seq), mass_ranges_2, target_mass)
 print('Sequence: %s,           Score =   %d' % (candidate_seq, c_score))
 print_ion_table(Protein(candidate_seq).all_ions(), mass_ranges_2)
 # PISSPVPDSpYSSFK
-#  RDLPVPSDpYSSFK = 260 Score, -0.01 Da mass diff
-# GVDLPVPSDpYSSFK = 260 Score,  0.00 Da mass diff
-# VGDLPVPSDpYSSFK = 260 Score,  0.00 Da mass diff
+#  RDLPVPDSpYSSFK = 290 (6, 13) Score, -0.01 Da mass diff
+#  RDLPVPSDpYSSFK = ???         Score, -0.01 Da mass diff
+# GVDLPVPSDpYSSFK = 300 (6, 14) Score,  0.00 Da mass diff
+# VGDLPVPSDpYSSFK = 300 (6, 14) Score,  0.00 Da mass diff
+#  RDLPVpYEDAASFK = 310 (8, 13) Score, -0.01 Da mass diff <--
 
 input('Press ENTER to continue ...\n')
 
@@ -315,8 +328,8 @@ for best in best_list:
     p = Protein(best)
     best_list_old = []
     final_max_score = max_score
-    did_find_candidate = False
-    while not did_find_candidate:
+    found_something = False
+    while not found_something:
         max_score = 0
         best_list_2 = []
         i_best = 0
@@ -326,6 +339,8 @@ for best in best_list:
             score, did_find_candidate = spectra_score(temp_p,
                                                       mass_ranges_2,
                                                       target_mass)
+            if did_find_candidate:
+                found_something = True
             if abs(score - max_score) < 1:
                 print('%10d | %20s | %8d | %10.2f' % (i,temp_p.sequence, score, target_mass - temp_p.mass))
                 if did_find_candidate: print_ion_table(temp_p.all_ions(), mass_ranges_2)
@@ -346,11 +361,13 @@ for best in best_list:
             if i_best < len(best_list_old):
                 p = Protein(best_list_old[i_best])
             else:
-                break
+                  break
+
+print('Candidates:')
 if candidates:                
     for p in candidates:
-        print('\n\nSeq - %s' % p.sequence)
-        print('(M + 2H)++ = %10.2f' % (p.charged_mass(2) / 2))
+        print('  Seq - %s' % p.sequence)
+        print('  (M + 2H)++ = %10.2f' % (p.charged_mass(2) / 2))
 else:
     print('Failed to find any candidates')
 
