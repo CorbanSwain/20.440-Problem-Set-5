@@ -44,17 +44,17 @@ cg = clustergram(data.data, 'RowLabels', data.sample_names, ...
 
 %% k-Means Clustering
 % setup constants
-gene_k = 3;
-sample_k = 5;
+gene_k = 2;
+sample_k = 6;
 nReplicates = 200;
 
 % perform k-means clustering along the sample axis
-sample_idx = kmeans(data.data, 5, 'Replicates', nReplicates);
-[~, sample_sort_idx] = sort(sample_idx);
+sample_idx = kmeans(data.data, sample_k, 'Replicates', nReplicates);
+[ssi_values, sample_sort_idx] = sort(sample_idx);
 
 % do the same along the gene axis
-gene_idx = kmeans(data.data', sample_k, 'Replicates', nReplicates);
-[~, gene_sort_idx] = sort(gene_idx);
+gene_idx = kmeans(data.data', gene_k, 'Replicates', nReplicates);
+[gsi_values, gene_sort_idx] = sort(gene_idx);
 
 % use the sorted indices to reorder the data matrices and label vectors
 ordered_data = data.data(sample_sort_idx, :);
@@ -68,6 +68,23 @@ h = heatmap(ord_gene_names, ord_sample_names, ordered_data);
 h.ColorLimits = [-3, 3];
 h.Colormap = redbluecmap;
 h.GridVisible = 'off';
-h.FontSize = 5;
+h.FontSize = 7;
 fprintf('Done!\n');
 
+% determine the endpoints of each cluster along the sample axis
+n_sample = size(data.data, 1);
+n_gene = size(data.data, 2);
+sample_diffs = diff(ssi_values);
+sample_branch_divisioins = ones(sample_k, 2);
+sep_points = find(sample_diffs);
+sample_branch_divisioins(1:(sample_k - 1), 2) = sep_points;
+sample_branch_divisioins(2:sample_k, 1) = sep_points + 1;
+sample_branch_divisioins(end) = n_sample
+
+% and the gene axis
+gene_diffs = diff(gsi_values);
+gene_branch_divisioins = ones(gene_k, 2);
+sep_points = find(gene_diffs);
+gene_branch_divisioins(1:(gene_k - 1), 2) = sep_points;
+gene_branch_divisioins(2:gene_k, 1) = sep_points + 1;
+gene_branch_divisioins(end) = n_gene
