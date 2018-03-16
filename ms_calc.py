@@ -316,7 +316,7 @@ input('Press ENTER to continue ...\n')
 
 max_score = None
 best_list = []
-for i, n_mer in enumerate(it.product(all_res, repeat=3)):
+for i, n_mer in enumerate(it.product(all_res, repeat=5)):
     p = Protein(''.join(list(n_mer)).replace(' ', ''))
     (b, y) = print_ion_table(p.all_ions(), mass_ranges_2, silent=True)
     score, _ = spectra_score(p, mass_ranges_2, target_mass)
@@ -342,7 +342,7 @@ for best in best_list:
         max_score = None
         best_list_2 = []
         i_best = 0
-        for i, n_mer in enumerate(it.product(all_res, repeat=3)):
+        for i, n_mer in enumerate(it.product(all_res, repeat=5)):
             n_mer_seq = ''.join(list(n_mer)).replace(' ', '') 
             temp_p = n_mer_seq + p
             score, did_find_candidate = spectra_score(temp_p,
